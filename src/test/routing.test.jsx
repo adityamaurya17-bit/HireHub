@@ -1,14 +1,7 @@
-import { render, screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { createMemoryRouter, RouterProvider } from 'react-router'
 import { describe, expect, it } from 'vitest'
-import { routes } from '../app/router.jsx'
-
-function renderAt(path) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] })
-  render(<RouterProvider router={router} />)
-  return router
-}
+import { renderRoute } from './renderRoute.jsx'
 
 function getPageHeading(name) {
   return screen.getByRole('heading', { level: 1, name })
@@ -20,19 +13,36 @@ describe('app routing', () => {
     ['/jobs', 'Discover Jobs'],
     ['/saved', 'Saved Jobs'],
   ])('renders the page for %s', (path, heading) => {
-    renderAt(path)
+    renderRoute(path)
     expect(getPageHeading(heading)).toBeInTheDocument()
   })
 
+  it.each([
+    ['/', 'Dashboard · HireHub'],
+    ['/saved', 'Saved Jobs · HireHub'],
+    ['/does-not-exist', 'Page not found · HireHub'],
+  ])('sets the document title for %s', async (path, title) => {
+    renderRoute(path)
+    await waitFor(() => expect(document.title).toBe(title))
+  })
+
   it('passes the job id to the job details page', () => {
-    renderAt('/jobs/job-42')
+    renderRoute('/jobs/job-42')
     expect(getPageHeading('Job Details')).toBeInTheDocument()
     expect(screen.getByText('job-42')).toBeInTheDocument()
   })
 
+  it('links from job details back to the job list', async () => {
+    const user = userEvent.setup()
+    renderRoute('/jobs/job-42')
+
+    await user.click(screen.getByRole('link', { name: 'Back to jobs' }))
+    expect(getPageHeading('Discover Jobs')).toBeInTheDocument()
+  })
+
   it('renders the not-found page for unknown routes with a way back', async () => {
     const user = userEvent.setup()
-    renderAt('/does-not-exist')
+    renderRoute('/does-not-exist')
     expect(getPageHeading('Page not found')).toBeInTheDocument()
 
     await user.click(screen.getByRole('link', { name: 'Back to dashboard' }))
@@ -41,7 +51,7 @@ describe('app routing', () => {
 
   it('navigates with the primary nav and marks the active link', async () => {
     const user = userEvent.setup()
-    renderAt('/')
+    renderRoute('/')
     const nav = screen.getByRole('navigation', { name: 'Primary' })
 
     expect(within(nav).getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
@@ -53,7 +63,7 @@ describe('app routing', () => {
   })
 
   it('marks only the active primary nav link as the current page', () => {
-    renderAt('/')
+    renderRoute('/')
     const currentLinks = screen
       .getAllByRole('link')
       .filter((link) => link.getAttribute('aria-current') === 'page')
@@ -62,13 +72,13 @@ describe('app routing', () => {
   })
 
   it('keeps Discover Jobs active on a job details route', () => {
-    renderAt('/jobs/job-42')
+    renderRoute('/jobs/job-42')
     const nav = screen.getByRole('navigation', { name: 'Primary' })
     expect(within(nav).getByRole('link', { name: 'Discover Jobs' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('provides a skip link to the main content', () => {
-    renderAt('/')
+    renderRoute('/')
     expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute('href', '#main-content')
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content')
   })

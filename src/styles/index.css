@@ -1,13 +1,40 @@
 @import 'tailwindcss';
 
+/* Brand accent: an alias of Tailwind's indigo scale, so components use
+   `brand-*` utilities and the accent can be changed in one place. */
+@theme inline {
+  --color-brand-50: var(--color-indigo-50);
+  --color-brand-100: var(--color-indigo-100);
+  --color-brand-200: var(--color-indigo-200);
+  --color-brand-300: var(--color-indigo-300);
+  --color-brand-400: var(--color-indigo-400);
+  --color-brand-500: var(--color-indigo-500);
+  --color-brand-600: var(--color-indigo-600);
+  --color-brand-700: var(--color-indigo-700);
+  --color-brand-800: var(--color-indigo-800);
+  --color-brand-900: var(--color-indigo-900);
+  --color-brand-950: var(--color-indigo-950);
+}
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Keep the page behind an open modal dialog (the mobile menu) from scrolling. */
+  html:has(dialog:modal) {
+    overflow: hidden;
+  }
+
   body {
     @apply bg-slate-50 text-slate-900;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
   }
 
   :focus-visible {
